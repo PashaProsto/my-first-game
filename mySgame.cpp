@@ -1,25 +1,25 @@
 #include <iostream> 
-// ввод\вывод
+// input/output
 
 #include <thread> 
-/*сложная команда задержки времени - std::this_thread::sleep_for(std::chrono::milliseconds(ms))
-но сокращается до this_thread::sleep_for(100ms);*/
+/*complex delay command - std::this_thread::sleep_for(std::chrono::milliseconds(ms))
+but shortened to this_thread::sleep_for(100ms);*/
 
 #include <cstdlib> 
-// для рандома букв врод, а также для очищения терминала при проигрыше
+// for random letters and clearing terminal on loss
 
 #include <vector>
-// для списков(карты)
+// for lists (map)
 
 #include <conio.h>
-// для неблокирующего ввода
+// for non-blocking input
 
 #include <chrono>
 
 #include <algorithm>
 
 #ifdef _WIN32
-#include <windows.h>  // нужно для gotoxy
+#include <windows.h>  // needed for gotoxy
 #endif
 
 #ifdef _WIN32
@@ -28,36 +28,36 @@
     #define CLEAR "clear"
 #endif
 
-// Функция перемещения курсора в позицию (0,0) - левый верхний угол
-// На Windows и Linux работает по-разному, поэтому используем условную компиляцию
+// Move cursor to position (0,0) - top-left corner
+// Works differently on Windows and Linux, so conditional compilation is used
 void gotoxy(int x, int y) 
 {
 #ifdef _WIN32
-    // Windows: используем SetConsoleCursorPosition
+    // Windows: use SetConsoleCursorPosition
     COORD coord;
     coord.X = x;
     coord.Y = y;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 #else
-    // Linux/Mac: используем ANSI escape-последовательности
-    // \033[ - начало escape-последовательности
-    // y;xH - перемещает курсор на строку y, колонку x
+    // Linux/Mac: use ANSI escape sequences
+    // \033[ - start of escape sequence
+    // y;xH - moves cursor to row y, column x
     printf("\033[%d;%dH", y + 1, x + 1);
 #endif
 }
 
-// Функция скрытия курсора (чтобы не мигал)
+// Hide cursor (so it doesn't blink)
 void hideCursor() 
 {
 #ifdef _WIN32
-    // Windows: прячем консольный курсор
+    // Windows: hide console cursor
     CONSOLE_CURSOR_INFO cursorInfo;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     GetConsoleCursorInfo(hConsole, &cursorInfo);
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(hConsole, &cursorInfo); 
 #else
-    // Linux: ANSI код для скрытия курсора
+    // Linux: ANSI code to hide cursor
     printf("\033[?25l");
 #endif
 }
@@ -65,16 +65,16 @@ void hideCursor()
 using namespace std;
 using namespace std::chrono_literals;
 
-// класс звезды
+// star class
 struct Star 
 {
     int x, y = 0;
     char symbol = "*+Xx"[rand() % 4];;
-    bool active = true;   // не упала ли уже
-    int type = 0; // 0=обычная звезда, 1=дополнительная жизнь
+    bool active = true;   // hasn't fallen yet
+    int type = 0; // 0=normal star, 1=extra life
 };
 
-// класс доп. жизни
+// bonus life class
 struct Bonus 
 {
     int x, y = 0;
@@ -82,7 +82,7 @@ struct Bonus
     bool active = true;
 };
 
-// переменные для времени и самой игры
+// variables for timing and game itself
 vector<Star> stars;
 vector<Bonus> bonuses;
 
@@ -98,17 +98,17 @@ int playerY = groundY - 1;
 bool gameRunning = true;
 
 using Clock = std::chrono::steady_clock;
-int move_delay_ms = 200;   // время между кадрами
-int spawn_star_ms = 1000;  // время между появлениями новой звезды
-int spawn_bonus_ms = 3000; // время между появлениями бонуса
+int move_delay_ms = 200;   // time between frames
+int spawn_star_ms = 1000;  // time between spawning a new star
+int spawn_bonus_ms = 3000; // time between spawning a bonus
 auto lastFrameTime = Clock::now();
 
 vector<vector<char>> map(10, vector<char>(10, ' '));
 
-// Функция рисует игровое поле на экране
+// Function draws the game field on the screen
 void draw(vector<vector<char>>& map, vector<Star>& stars) 
 {
-    // рисуем игровое поле
+    // draw the game field
     for (int i = 0; i < 10; i++) 
     {
         for (int j = 0; j < 10; j++)
@@ -117,7 +117,7 @@ void draw(vector<vector<char>>& map, vector<Star>& stars)
         }
     }
     
-    // рисуем падающие звезды
+    // draw falling stars
     for (const auto& s : stars) 
     {
         if (s.active && s.y >= 0 && s.y < 10 && s.x >= 0 && s.x < 10) map[s.y][s.x] = s.symbol;
@@ -128,10 +128,10 @@ void draw(vector<vector<char>>& map, vector<Star>& stars)
         if (b.active && b.y >= 0 && b.y < 10 && b.x >= 0 && b.x < 10) map[b.y][b.x] = b.symbol;
     }
 
-    // рисуем игрока
+    // draw player
     map[playerY][playerX] = 'V';
 
-    // печатаем все, что есть на карте
+    // print everything on the map
     for (int i = 0; i < 10; i++) 
     {
         
@@ -142,18 +142,18 @@ void draw(vector<vector<char>>& map, vector<Star>& stars)
         cout << endl;
     }
 
-    cout << "Ваш счет: " << score << endl;
-    cout << "Ваши жизни: " << lives << endl;
-    cout << "Скорость игры: " << 1000 / move_delay_ms + 95 << "%" << endl;
+    cout << "Your score: " << score << endl;
+    cout << "Your lives: " << lives << endl;
+    cout << "Game speed: " << 1000 / move_delay_ms + 95 << "%" << endl;
 }
 
 
-// функция спавна новой звезды
+// function to spawn a new star
 void spawnStar(vector<Star>& stars) {
     Star newStar;
     newStar.x = rand() % 10;
     newStar.y = 0;
-    newStar.symbol = "*+Xx"[rand() % 4]; // разные символы
+    newStar.symbol = "*+Xx"[rand() % 4]; // different symbols
     newStar.active = true;
     stars.push_back(newStar);
 }
@@ -170,69 +170,69 @@ void spawnBonus(vector<Bonus>& bonuses) {
 void GameOver()
 {
     system(CLEAR);
-    cout << "Вы проиграли!" << endl << "Ваш наилучший счет:" << highScore << endl;
-    cout << "Нажмите любую клавишу, чтобы продолжить..." << endl;
+    cout << "You lost!" << endl << "Your best score: " << highScore << endl;
+    cout << "Press any key to continue..." << endl;
     this_thread::sleep_for(500ms);
     _getch();
 }
 
 
-// основная функция игры
+// main game function
 int main()
 {   
     #ifdef _WIN32
-        system("chcp 65001 > nul");    // Windows: переключаем консоль в UTF-8
+        system("chcp 65001 > nul");    // Windows: switch console to UTF-8
     #endif
-        system(CLEAR);                 // очищаем экран один раз в начале
-        hideCursor();                  // скрываем мигающий курсор
-        srand(time(nullptr));          // инициализация рандома
+        system(CLEAR);                 // clear screen once at the start
+        hideCursor();                  // hide blinking cursor
+        srand(time(nullptr));          // init random
 
-    ios_base::sync_with_stdio(false);  // отключаем синхронизацию с C stdio
-    cin.tie(nullptr);                  // отвязываем cin от cout
-    cout.tie(nullptr);                 // оптимизация вывода
-    this_thread::sleep_for(100ms); // небольшая задержка перед появлением стратового экрана
+    ios_base::sync_with_stdio(false);  // disable sync with C stdio
+    cin.tie(nullptr);                  // untie cin from cout
+    cout.tie(nullptr);                 // output optimization
+    this_thread::sleep_for(100ms); // small delay before the start screen appears
 
-    // стартовый экран
-    cout << "Игра ''The Stars Are Falling!''" << endl << "Нажимайте на стрелочки или же на W/A/S/D(ТОЛЬКО АНГЛИЙСКАЯ РАСКЛАДКА), чтобы двигаться и ловить звезды(Xx*+)" << endl;
-    cout << "С каждой пойманной звездой игра ускоряется!" << endl << "Если вы не словите звезду - то у вас отнимется одна жизнь" << endl;
-    cout << "Собирайте бонусы(h - health) чтобы замедлить игру и получить доп. жизни." << "Если бонус упадет - ничего не случится!" << endl;
+    // start screen
+    cout << "Game ''The Stars Are Falling!''" << endl << "Press arrow keys or W/A/S/D (ENGLISH LAYOUT ONLY) to move and catch stars (Xx*+)" << endl;
+    cout << "With each caught star the game speeds up!" << endl << "If you miss a star - you lose one life" << endl;
+    cout << "Collect bonuses (h - health) to slow down the game and get extra lives." << "If a bonus falls - nothing happens!" << endl;
     this_thread::sleep_for(100ms);
-    cout << "Нажмите любую клавишу, чтобы продолжить..." << endl;
+    cout << "Press any key to continue..." << endl;
     _getch();
 
-    // очистка экрана и обновления переменных времени
+    // clear screen and update time variables
     system(CLEAR);                
-    Clock::time_point lastMoveTime = Clock::now();   // последнее время кадра
-    Clock::time_point lastSpawnSTime = Clock::now(); // последнее время спавна звезды
-    Clock::time_point lastSpawnBTime = Clock::now(); // последнее время спавна бонуса
+    Clock::time_point lastMoveTime = Clock::now();   // last frame time
+    Clock::time_point lastSpawnSTime = Clock::now(); // last star spawn time
+    Clock::time_point lastSpawnBTime = Clock::now(); // last bonus spawn time
 
-    // отрисовка первого кадра и спавн первой звезды/бонуса
+    // draw first frame and spawn first star/bonus
     draw(map, stars);
     spawnStar(stars);
     spawnBonus(bonuses);
 
-    // основной игровой цикл
+    // main game loop
     while(gameRunning)
     {  
         auto currentFrame = Clock::now();
         auto frameDuration = chrono::duration_cast<chrono::milliseconds>(currentFrame - lastFrameTime).count();
 
-        if (frameDuration < 16) // максимум 60 фпс
+        if (frameDuration < 16) // 60 fps max
         {
             this_thread::sleep_for(chrono::milliseconds(16 - frameDuration));
         }
 
         lastFrameTime = Clock::now();
 
-        // очистка каждого кадра для отрисовки нового
+        // clear each frame to draw a new one
         gotoxy(0, 0);
 
-        // ввод на стрелочки и буквы A/D
+        // input for arrows and W/A/S/D keys
         if (_kbhit()) 
         {
             int key = _getch();
             
-            // Обработка специальных клавиш (стрелки)
+            // Handle special keys (arrows)
             if (key == 224) 
             {
                 if (_kbhit())  
@@ -244,7 +244,7 @@ int main()
                     if (key == 80) playerY = min(9, playerY + 1);
                 }
             }
-            // Обработка обычных букв A и D
+            // Handle regular letters w a s d
             else if (key == 'a' || key == 'A') playerX = max(0, playerX - 1);
             else if (key == 'd' || key == 'D') playerX = min(9, playerX + 1);
             else if (key == 'w' || key == 'W') playerY = max(0, playerY - 1);
@@ -252,10 +252,10 @@ int main()
             
             
         }
-        // проверка настоящего времени
+        // check real time
         auto currentTime = Clock::now();
 
-        // движение + проверка столкновения
+        // movement + collision check
         auto elapsedMove = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastMoveTime).count();
         if (elapsedMove >= move_delay_ms) 
         {
@@ -280,7 +280,7 @@ int main()
                 }
             }
 
-            // Движение бонусов
+            // Bonus movement
             for (size_t i = 0; i < bonuses.size(); i++) 
             {
                 bonuses[i].y++;
@@ -302,7 +302,7 @@ int main()
             lastMoveTime = currentTime;
         }
 
-        // спавн звезд
+        // spawn stars
         auto elapsedSpawnS = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastSpawnSTime).count();
         if (elapsedSpawnS >= spawn_star_ms) 
         {
@@ -310,7 +310,7 @@ int main()
             lastSpawnSTime = currentTime;
         }
 
-        // спавн бонусов
+        // spawn bonuses
         auto elapsedSpawnB = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastSpawnBTime).count();
         if (elapsedSpawnB >= spawn_bonus_ms) 
         {
@@ -318,14 +318,14 @@ int main()
             lastSpawnBTime = currentTime;
         }
 
-        // удаление старых звезд/бонусов
+        // remove old stars/bonuses
         for (int i = stars.size()-1; i >= 0; i--) if (stars[i].active == false) stars.erase(stars.begin() + i);
         for (int i = bonuses.size()-1; i >= 0; i--) if (bonuses[i].active == false) bonuses.erase(bonuses.begin() + i);
 
-        // сохранение максимального рекорда
+        // save high score
         if (score > highScore) highScore = score;
 
-        // проверка счета и проигрыш
+        // check score and loss
         if (lives <= 0) 
         {
             GameOver();
