@@ -227,7 +227,7 @@ int main()
         // очистка каждого кадра для отрисовки нового
         gotoxy(0, 0);
 
-        // ввод на стрелочки и буквы A/D
+        // ввод на стрелочки и буквы W/A/S/D
         if (_kbhit()) 
         {
             int key = _getch();
@@ -244,7 +244,7 @@ int main()
                     if (key == 80) playerY = min(9, playerY + 1);
                 }
             }
-            // Обработка обычных букв A и D
+            // Обработка обычных букв W A S D
             else if (key == 'a' || key == 'A') playerX = max(0, playerX - 1);
             else if (key == 'd' || key == 'D') playerX = min(9, playerX + 1);
             else if (key == 'w' || key == 'W') playerY = max(0, playerY - 1);
